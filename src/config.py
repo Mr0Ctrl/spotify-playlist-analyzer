@@ -1,0 +1,38 @@
+class Columns:
+    TRACK_NAME = "Track Name"
+    ARTIST_NAMES = "Artist Name(s)"
+    ALBUM_NAME = "Album Name"
+    ARTIST_GENRES = "Artist Genres"
+    POPULARITY = "Popularity"
+    KEY = "Key"
+    MODE = "Mode"
+    DURATION = "Track Duration (ms)"
+    LOUDNESS = "Loudness"
+    TEMPO = "Tempo"
+    TIME_SIGNATURE = "Time Signature"
+    DANCEABILITY = "Danceability"
+    ENERGY = "Energy"
+    SPEECHINESS = "Speechiness"
+    ACOUSTICNESS = "Acousticness"
+    INSTRUMENTALNESS = "Instrumentalness"
+    LIVENESS = "Liveness"
+    VALENCE = "Valence"
+
+class DataColors:
+    SIMILAR_TRACKS = "#5cd0ed"
+    GENRE = "#6f0d96"
+    ENERGY = "#f58f2f"
+    VALENCE = "#e0b010"
+    TEMPO = "#5f5f5f"
+
+
+A5_LANDSCAPE = (210, 148)   # 210mm x 148mm
+A4_LANDSCAPE = (297, 210)   # 297mm x 210mm
+A3_LANDSCAPE = (420, 297)   # 420mm x 297mm
+A2_LANDSCAPE = (594, 420)   # 594mm x 420mm
+
+PERCENTAGE_COLUMNS = [
+    Columns.DANCEABILITY, Columns.ENERGY, Columns.SPEECHINESS, 
+    Columns.ACOUSTICNESS, Columns.INSTRUMENTALNESS, 
+    Columns.LIVENESS, Columns.VALENCE
+]
