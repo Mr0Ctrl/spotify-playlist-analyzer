@@ -204,3 +204,52 @@ def create_ranking_plot(df, column, title, color, top_n=15, ascending=False):
     plt.tight_layout()
     
     return fig
+
+def create_playlist_dna_catplot(df, features, title="Playlist Audio Features DNA"):
+    """
+    Tüm ses özelliklerini tek bir sayfada categorical plot (violin + strip) 
+    olarak gösterir. Listenin karakterini bir bakışta özetler.
+    """
+    # 1. Veriyi 'Long-format'a çeviriyoruz (Seaborn catplot için şart)
+    # Sütunlar: [Feature_Name, Value] şeklinde olacak
+    df_melted = df[features].melt(var_name='Feature', value_name='Value')
+
+    # 2. Plot oluşturma
+    # kind="violin" hem boxplot hem de yoğunluk (dağılım) bilgisini verir.
+    # inner="quart" çeyreklik dilimleri gösterir.
+    g = sns.catplot(
+        data=df_melted, 
+        x='Feature', 
+        y='Value', 
+        kind='violin', 
+        inner='quart', 
+        split=True,
+        palette='viridis',
+        height=6, 
+        aspect=2, # Genişlik/Yükseklik oranı (A4 Landscape uyumu için)
+        bw_method=0.2 # Dağılımın hassasiyeti
+    )
+
+    # 3. Üzerine ham veriyi (noktaları) ekleyelim (stripplot)
+    # Bu, kaç şarkının nerede toplandığını 'gerçek' veri olarak görmemizi sağlar.
+    sns.stripplot(
+        data=df_melted, 
+        x='Feature', 
+        y='Value', 
+        color='black', 
+        size=2, 
+        alpha=0.3, 
+        ax=g.ax
+    )
+
+    # 4. Estetik düzenlemeler
+    g.ax.set_title(title, fontsize=16, pad=20)
+    g.ax.set_ylim(0, 1) # Spotify metrikleri 0-1 arasındadır
+    g.ax.set_ylabel("Intensity (0.0 - 1.0)")
+    g.ax.set_xlabel("Musical Parameters")
+    plt.xticks(rotation=15) # Yazıların birbirine girmemesi için
+    
+    plt.tight_layout()
+    
+    # catplot bir FacetGrid döner, figürüne erişip döndürüyoruz
+    return g.fig
