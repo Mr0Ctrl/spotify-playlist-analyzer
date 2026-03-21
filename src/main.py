@@ -1,5 +1,7 @@
 import sys
-import config, data_loader, preprocessor
+import os
+import matplotlib.pyplot as plt
+import config, data_loader, preprocessor, visualization
 from utils import file_system
 
 def main():
@@ -15,20 +17,24 @@ def main():
         out_dir = file_system.create_output_dir(playlist_name)
         df = data_loader.load_csv(csv_path)
         
-        print(f"--- Analyzing {playlist_name} ---")
+        print(f"--- Visualizing {playlist_name} ---")
 
-        # 2. Analysis: Average Values
+        # 2. Analysis
         averages = preprocessor.get_audio_averages(df)
-        print("\n[Musical Profile (Averages)]")
-        for key, val in averages.items():
-            print(f"- {key}: {val:.2f}")
-
-        # 3. Analysis: Genre Statistics
         genres = preprocessor.get_genre_stats(df)
-        print("\n[Top 5 Genres]")
-        print(genres.head(5).to_string(index=False))
 
-        print(f"\nAnalysis completed. Results will be prepared in '{out_dir}' folder.")
+        # 3. Visualization (Generate figures)
+        radar_fig = visualization.create_radar_chart(averages, "Playlist Audio Profile")
+        wc_fig = visualization.create_wordcloud(genres, "Top Genres Cloud")
+
+        # 4. Temporary Save (as PNG) - For Testing Purposes
+        radar_fig.savefig(os.path.join(out_dir, "radar_profile.png"))
+        wc_fig.savefig(os.path.join(out_dir, "genres_cloud.png"))
+        
+        # Clean up memory (Very important!)
+        plt.close('all')
+
+        print(f"Graphs created and saved as PNG in '{out_dir}' folder.")
 
     except Exception as e:
         print(f"ERROR: {e}")
