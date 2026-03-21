@@ -21,9 +21,23 @@ class Columns:
 class DataColors:
     SIMILAR_TRACKS = "#5cd0ed"
     GENRE = "#6f0d96"
-    ENERGY = "#f58f2f"
-    VALENCE = "#e0b010"
+    ARTIST = "#06806b"
+    POPULARITY = "#19b065"
+    KEY = "#35606d"
+    MODE = "#0e3d4b"
+    DURATION = "#ed5c5e"
+    LOUDNESS = "#570202"
     TEMPO = "#5f5f5f"
+    TIME_SIGNATURE = "#272727"
+    
+    # Audio Features (Yüzdelik Sütunlar)
+    DANCEABILITY = "#853d9b"
+    ENERGY = "#f58f2f"
+    SPEECHINESS = "#15c7a0"
+    ACOUSTICNESS = "#b48a52"
+    INSTRUMENTALNESS = "#e489dc"
+    LIVENESS = "#d63693"
+    VALENCE = "#e0b010" 
 
 
 A5_LANDSCAPE = (210, 148)   # 210mm x 148mm
@@ -32,9 +46,14 @@ A3_LANDSCAPE = (420, 297)   # 420mm x 297mm
 A2_LANDSCAPE = (594, 420)   # 594mm x 420mm
 
 PERCENTAGE_COLUMNS = [
-    Columns.DANCEABILITY, Columns.ENERGY, Columns.SPEECHINESS, 
-    Columns.ACOUSTICNESS, Columns.INSTRUMENTALNESS, 
-    Columns.LIVENESS, Columns.VALENCE
+    Columns.DANCEABILITY,
+    Columns.VALENCE ,
+    Columns.ENERGY, 
+    Columns.SPEECHINESS, 
+    Columns.INSTRUMENTALNESS,
+    Columns.ACOUSTICNESS, 
+    Columns.LIVENESS, 
+    Columns.TEMPO
 ]
 
 feature_weights = {
@@ -45,6 +64,7 @@ feature_weights = {
     Columns.INSTRUMENTALNESS: 0.5,
     Columns.LIVENESS        : 0.1,
     Columns.SPEECHINESS     : 0.5,
+    Columns.TEMPO           : 0.002,
 }
 
 # PDF Layout and Metadata
