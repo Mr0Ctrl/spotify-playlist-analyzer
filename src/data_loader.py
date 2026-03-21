@@ -103,39 +103,53 @@ def combine_dataframes(dfs: List[pd.DataFrame]) -> pd.DataFrame:
     
     return combined_df
 
-def load_csv(file_path: str, add_source_column: bool = True, combine: bool = True) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+def load_csv(file_path: Union[str, List[str]], add_source_column: bool = True, combine: bool = True) -> pd.DataFrame:
     """
-    Loads CSV file(s) from the given path.
+    Loads CSV file(s) from given path(s).
     
     Args:
-        file_path: Path to a CSV file or directory containing CSV files
-        add_source_column: Whether to add a column with the source filename
-        combine: If True and multiple files found, combine into single DataFrame
+        file_path: Single path (file/dir) OR list of paths
+        add_source_column: Whether to add source filename column
+        combine: If True, combine all into single DataFrame
         
     Returns:
-        DataFrame if combine=True or single file, otherwise List[DataFrame]
+        Combined DataFrame (always returns DataFrame, never List)
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Path not found: {file_path}")
-    
-    # Single file
-    if os.path.isfile(file_path):
-        if not file_path.lower().endswith('.csv'):
-            raise ValueError(f"File must be a CSV: {file_path}")
-        
-        df = load_single_csv(file_path, add_source_column)
-        if df is None:
-            raise ValueError(f"Invalid CSV file: {file_path}")
-        return df
-    
-    # Directory
-    elif os.path.isdir(file_path):
-        dfs = load_csv_files_from_directory(file_path, add_source_column)
-        
-        if combine or len(dfs) == 1:
-            return combine_dataframes(dfs)
-        else:
-            return dfs
-    
+    # Convert single path to list for uniform processing
+    if isinstance(file_path, str):
+        paths = [file_path]
     else:
-        raise ValueError(f"Path is neither a file nor a directory: {file_path}")
+        paths = file_path
+    
+    all_dfs = []
+    
+    for path in paths:
+        if not os.path.exists(path):
+            print(f"Warning: Path not found, skipping: {path}")
+            continue
+        
+        # Single file
+        if os.path.isfile(path):
+            if not path.lower().endswith('.csv'):
+                print(f"Warning: Not a CSV file, skipping: {path}")
+                continue
+            
+            df = load_single_csv(path, add_source_column)
+            if df is not None:
+                all_dfs.append(df)
+        
+        # Directory
+        elif os.path.isdir(path):
+            dfs = load_csv_files_from_directory(path, add_source_column)
+            all_dfs.extend(dfs)
+    
+    if not all_dfs:
+        raise ValueError("No valid CSV files found in any path")
+    
+    # Combine all DataFrames
+    if combine or len(all_dfs) == 1:
+        return combine_dataframes(all_dfs)
+    else:
+        # If combine=False but multiple files, still return combined (consistency)
+        print("Warning: combine=False ignored for multiple sources, returning combined DataFrame")
+        return combine_dataframes(all_dfs)

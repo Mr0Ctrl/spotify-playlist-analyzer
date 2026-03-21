@@ -5,16 +5,18 @@ import config
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python -m src.main <csv_file>")
-        return
+            print("Usage: python -m src.main <csv_file1> [csv_file2] ...")
+            print("       python -m src.main <directory>")
+            return
 
-    csv_path = sys.argv[1]
+    # Support multiple CSV paths
+    csv_paths = sys.argv[1:]
     
     try:
         # 1. Setup and Data Loading
-        playlist_name = file_system.get_safe_filename(csv_path)
+        playlist_name = file_system.get_safe_filename(csv_paths)
         out_dir = file_system.create_output_dir(playlist_name)
-        df = data_loader.load_csv(csv_path)
+        df = data_loader.load_csv(csv_paths)
         
         print(f"--- Generating Report for: {playlist_name} ---")
 
