@@ -65,7 +65,8 @@ def create_network_graph(nodes: list, edges: list, title: str) -> plt.Figure:
     
     # Use spring layout with weight as distance (smaller weight = stronger attraction)
     # This makes similar nodes (small weight) appear closer together
-    pos = nx.spring_layout(G, weight='weight', k=0.4, iterations=256, seed=42)
+    pos = nx.spring_layout(G, weight='weight', k=0.25, iterations=512, seed=42,)
+
     
     # Colors for components (use tab10 colormap for up to 10 components)
     colors = plt.cm.tab10(np.linspace(0, 1, len(components)))
