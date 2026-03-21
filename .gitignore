@@ -133,3 +133,5 @@ dmypy.json
 out/
 # exclude temporary folder
 temp/
+# exclude input files
+csv_files/
