@@ -2,6 +2,7 @@ import pandas as pd
 import config
 from itertools import product
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 
 def get_audio_averages(df: pd.DataFrame) -> dict:
@@ -29,36 +30,34 @@ def get_genre_stats(df: pd.DataFrame) -> pd.DataFrame:
     return genre_df.sort_values(by="Count", ascending=False)
 
 def get_track_similarity_network(df: pd.DataFrame) -> tuple:
-    """Calculates pairwise distances and builds a similarity network."""
+    """Connects tracks that are similar beyond a threshold, not just top-k."""
+
+    
+    # Extract feature matrix
+    feature_cols = config.PERCENTAGE_COLUMNS
+    feature_matrix = df[feature_cols].values
+    
     num_tracks = len(df)
     
-    # 1. Create all possible pairs (Cartesian product)
-    pairs = pd.DataFrame(product(df.index, df.index))
-    
-    # 2. Filter out identity (A to A) and duplicate pairs (A-B vs B-A)
-    pairs = pairs[pairs[0] < pairs[1]].copy()
-    
-    # 3. Calculate distance for each pair based on PERCENTAGE_COLUMNS
-    # Manhattan distance sum(|a - b|)
-    dist_sum = 0
-    for col in config.PERCENTAGE_COLUMNS:
-        dist_sum += abs(df[col].iloc[pairs[0]].values - df[col].iloc[pairs[1]].values)
-    
-    pairs[config.GLOB_DIST_COL] = dist_sum
-    
-    # 4. Edge Filtering: Keep only the most similar tracks (shortest distance)
-    pairs = pairs.sort_values(config.GLOB_DIST_COL)
+    # Find k+1 neighbors (including self)
+    nbrs = NearestNeighbors(n_neighbors=config.MAX_EDGES_PER_NODE + 1, metric='euclidean')
+    nbrs.fit(feature_matrix)
+    distances, indices = nbrs.kneighbors(feature_matrix)
     
     kept_edges = []
     edge_counts = np.zeros(num_tracks)
     
-    for _, row in pairs.iterrows():
-        node_a, node_b = int(row[0]), int(row[1])
-        
-        # Keep edges if at least one node hasn't reached the limit
-        if edge_counts[node_a] < config.MAX_EDGES_PER_NODE or edge_counts[node_b] < config.MAX_EDGES_PER_NODE:
-            kept_edges.append((node_a, node_b, row[config.GLOB_DIST_COL]))
-            edge_counts[node_a] += 1
-            edge_counts[node_b] += 1
+    for i in range(num_tracks):
+        # Skip the first neighbor (which is the track itself)
+        for j_idx in range(1, len(indices[i])):
+            j = indices[i][j_idx]
+            dist = distances[i][j_idx]
             
+            # Only connect if similarity is above threshold (distance below threshold)
+            if dist < config.SIMILARITY_THRESHOLD:
+                if i < j and edge_counts[i] < config.MAX_EDGES_PER_NODE and edge_counts[j] < config.MAX_EDGES_PER_NODE:
+                    kept_edges.append((i, j, dist))
+                    edge_counts[i] += 1
+                    edge_counts[j] += 1
+    
     return list(range(num_tracks)), kept_edges

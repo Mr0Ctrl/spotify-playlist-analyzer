@@ -46,5 +46,6 @@ TITLE_FONT_SIZE = 28
 SUBTITLE_FONT_SIZE = 16
 
 # Network Analysis Settings
-MAX_EDGES_PER_NODE = 4  # Number of connections for each track
+MAX_EDGES_PER_NODE = 3 
+SIMILARITY_THRESHOLD = 0.40
 GLOB_DIST_COL = "Global_Distance"

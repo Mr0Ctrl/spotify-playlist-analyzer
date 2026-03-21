@@ -49,27 +49,51 @@ def create_wordcloud(genre_df, title: str) -> plt.Figure:
     return fig
 
 def create_network_graph(nodes: list, edges: list, title: str) -> plt.Figure:
-    """Draws a similarity graph using a force-directed layout."""
+    """Draws a similarity graph with threshold-based filtering and colored components."""
+    
     G = nx.Graph()
     G.add_nodes_from(nodes)
     
-    # edges is a list of tuples (node1, node2, weight)
+    # Add edges with weights
     for u, v, w in edges:
         G.add_edge(u, v, weight=w)
-        
+    
+    # Find connected components
+    components = list(nx.connected_components(G))
+    
     fig, ax = plt.subplots(figsize=(12, 12))
     
-    # Calculate layout (Spring layout simulates physical forces)
-    pos = nx.spring_layout(G, k=0.15, iterations=20)
+    # Use spring layout with weight as distance (smaller weight = stronger attraction)
+    # This makes similar nodes (small weight) appear closer together
+    pos = nx.spring_layout(G, weight='weight', k=0.4, iterations=256, seed=42)
     
-    # Draw nodes and labels
-    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=300, node_color=config.DataColors.SIMILAR_TRACKS, alpha=0.7)
-    nx.draw_networkx_labels(G, pos, ax=ax, font_size=8)
+    # Colors for components (use tab10 colormap for up to 10 components)
+    colors = plt.cm.tab10(np.linspace(0, 1, len(components)))
     
-    # Draw edges
-    nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.3, edge_color="gray")
+    # Draw edges with thickness based on similarity
+    for u, v, w in edges:
+        # Normalize weight to [0,1] for thickness (smaller distance = thicker edge)
+        # Assuming weights are between 0 and 1 (distance)
+        thickness = 1 + (1 - w) * 3  # Range: 1 to 4
+        nx.draw_networkx_edges(G, pos, edgelist=[(u, v)], 
+                              width=thickness, alpha=0.5, edge_color='gray', ax=ax)
     
-    ax.set_title(title, size=18)
+    # Draw nodes by component
+    for comp_idx, component in enumerate(components):
+        # Get nodes in this component
+        comp_nodes = list(component)
+        color = colors[comp_idx]
+        
+        # Draw nodes
+        nx.draw_networkx_nodes(G, pos, nodelist=comp_nodes, 
+                              node_size=300, node_color=[color], 
+                              alpha=0.7, ax=ax)
+        
+        # Draw labels for this component
+        nx.draw_networkx_labels(G, pos, labels={node: node for node in comp_nodes}, 
+                               font_size=8, ax=ax)
+    
+    ax.set_title(title, size=16, pad=20)
     ax.set_axis_off()
     
     return fig
