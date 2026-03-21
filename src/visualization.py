@@ -5,6 +5,7 @@ import config
 import networkx as nx
 from utils import math_utils
 from itertools import combinations
+import seaborn as sns
 
 
 
@@ -13,8 +14,7 @@ def create_radar_chart(averages: dict, title: str) -> plt.Figure:
     labels = list(averages.keys())
     values = list(averages.values())
     num_vars = len(labels)
-
-    values[-1] = values[-1]/200
+    
     # Add the first value to the end to complete the circle
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     values += values[:1]

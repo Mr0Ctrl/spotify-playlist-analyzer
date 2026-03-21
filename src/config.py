@@ -46,6 +46,7 @@ A3_LANDSCAPE = (420, 297)   # 420mm x 297mm
 A2_LANDSCAPE = (594, 420)   # 594mm x 420mm
 
 PERCENTAGE_COLUMNS = [
+    Columns.TEMPO,
     Columns.DANCEABILITY,
     Columns.VALENCE ,
     Columns.ENERGY, 
@@ -53,7 +54,6 @@ PERCENTAGE_COLUMNS = [
     Columns.INSTRUMENTALNESS,
     Columns.ACOUSTICNESS, 
     Columns.LIVENESS, 
-    Columns.TEMPO
 ]
 
 feature_weights = {
@@ -64,7 +64,7 @@ feature_weights = {
     Columns.INSTRUMENTALNESS: 0.5,
     Columns.LIVENESS        : 0.1,
     Columns.SPEECHINESS     : 0.5,
-    Columns.TEMPO           : 0.002,
+    Columns.TEMPO           : 0.5,
 }
 
 # PDF Layout and Metadata

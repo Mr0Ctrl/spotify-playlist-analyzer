@@ -15,9 +15,9 @@ def get_safe_filename(path: Union[str, List[str]]) -> str:
             names = [os.path.splitext(os.path.basename(p))[0] for p in path]
             # Take first 2-3 names to avoid too long filename
             if len(names) > 3:
-                combined = "-".join(names[:3]) + f"_and_{len(names)-3}_more"
+                combined = "_&_".join(names[:3]) + f"_and_{len(names)-3}_more"
             else:
-                combined = "_".join(names)
+                combined = "_&_".join(names)
             return combined
     else:
         # Single path (file or directory)

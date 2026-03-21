@@ -63,3 +63,50 @@ def get_track_similarity_network(df: pd.DataFrame, feature_weights: dict = None)
                     edge_counts[j] += 1
     
     return list(range(num_tracks)), kept_edges
+
+def normalize_tempo_in_place(df: pd.DataFrame, min_reference: int = 50, max_reference: int = 200):
+    """
+    Tempo (BPM) değerini referans aralığa göre 0-1 arasına normalize eder.
+    Referans tipli işlem yaparak DataFrame'i doğrudan günceller.
+    
+    Neden 50-200? 
+    Genelde müzikal tempo bu aralıktadır. 50 altı veya 200 üstü değerler 
+    uç değer (outlier) kabul edilerek sınırlara çekilir (clamping).
+    """
+    tempo_col = config.Columns.TEMPO
+    
+    if tempo_col not in df.columns:
+        return
+
+    # 1. Adım: Clamping (Sınırlandırma)
+    # Değerleri min_reference ve max_reference arasına hapseder.
+    # Örneğin: 220 BPM olan bir şarkı 200 kabul edilir, 40 olan 50 kabul edilir.
+    df[tempo_col] = df[tempo_col].clip(lower=min_reference, upper=max_reference)
+    
+    # 2. Adım: Min-Max Scaling
+    # Formül: (x - min) / (max - min)
+    # Bu sayede 50 BPM -> 0.0, 200 BPM -> 1.0, 125 BPM -> 0.5 olur.
+    df[tempo_col] = (df[tempo_col] - min_reference) / (max_reference - min_reference)
+    
+    print(f"Tempo normalized in-place using range [{min_reference}-{max_reference}].")
+
+
+def detect_outliers_statistical(df):
+    """
+    Yüzde vermek yerine, listenin ortalama ruh haline 
+    istatistiksel olarak 'çok uzak' olanları bulur.
+    """
+    features = config.PERCENTAGE_COLUMNS
+    # Listenin 'ortalama' profili (Centroid)
+    centroid = df[features].mean()
+    
+    # Her şarkının bu merkeze olan Öklid uzaklığı
+    distances = np.linalg.norm(df[features] - centroid, axis=1)
+    df['distance_from_center'] = distances
+    
+    # Eşik Değer: Ortalama Uzaklık + 2 * Standart Sapma
+    # (İstatistikte verinin %95'i bu sınırın içindedir, dışındakiler 'gerçek' outlierdır)
+    threshold = distances.mean() + (2 * distances.std())
+    
+    outliers = df[df['distance_from_center'] > threshold].sort_values('distance_from_center', ascending=False)
+    return outliers
