@@ -83,17 +83,18 @@ def main():
         for fig in flow_figs:
             report.add_visual_page(fig)
 
-        # Top Energetic Tracks
-        print("Creating Top Tracks Analysis...")
-        top_energy = visualization.create_ranking_plot(df, config.Columns.ENERGY, "Top 15 Most Energetic Tracks", config.DataColors.ENERGY)
-        report.add_visual_page(top_energy)
-        
-        # Additional rankings (optional)
-        top_dance = visualization.create_ranking_plot(df, config.Columns.DANCEABILITY, "Top 15 Most Danceable Tracks", config.DataColors.DANCEABILITY)
-        report.add_visual_page(top_dance)
-        
-        top_valence = visualization.create_ranking_plot(df, config.Columns.VALENCE, "Top 15 Most Positive Tracks", config.DataColors.VALENCE)
-        report.add_visual_page(top_valence)
+        print("Generating Top & Bottom 10 feature tables...")
+
+        # config.PERCENTAGE_COLUMNS (8 adet özellik içerir)
+        extremes_pages = visualization.create_top_bottom_tables_page(
+            df=df, 
+            features=config.PERCENTAGE_COLUMNS,
+            title="Playlist Extremes: Top & Bottom Tracks by Feature"
+        )
+
+        # Oluşan 2 sayfayı rapora ekle
+        for page_fig in extremes_pages:
+            report.add_visual_page(page_fig)
 
         # 5. Finalize
         report.close()

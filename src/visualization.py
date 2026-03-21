@@ -6,6 +6,7 @@ import networkx as nx
 from utils import math_utils
 from itertools import combinations
 import seaborn as sns
+import pandas as pd
 
 
 
@@ -228,27 +229,89 @@ def create_flow_analysis_grid(df, features, window_size=5):
         pages.append(fig)
     return pages
     
-def create_ranking_plot(df, column, title, color, top_n=15, ascending=False):
-    """En yüksek veya en düşük N şarkıyı sıralar."""
-    # Veriyi sırala ve ilk N tanesini al
-    rank_df = df.sort_values(by=column, ascending=ascending).head(top_n)
+def create_top_bottom_tables_page(df: pd.DataFrame, features: list, title: str = "Feature Extremes (Top & Bottom 10 Tracks)"):
+    """
+    Belirtilen özellikler için en yüksek ve en düşük 10 şarkıyı
+    2 sayfaya (her sayfada 8 tablo, 2 satır x 4 sütun) bölecek şekilde tablolar oluşturur.
+    """
+    pages = []
     
-    # Görselleştirme için ters çevir (barh alttan başlar)
-    rank_df = rank_df.iloc[::-1]
+    # 8 özelliği 4'erli 2 gruba ayırıyoruz (her sayfa için 4 özellik -> 4 Top + 4 Bottom = 8 Tablo)
+    feature_chunks = [features[i:i + 4] for i in range(0, len(features), 4)]
     
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Etiket oluşturma: Index + Şarkı Adı
-    labels = [f"#{idx} {name[:30]}" for idx, name in zip(rank_df.index, rank_df['Track Name'])]
-    
-    bars = ax.barh(labels, rank_df[column], color=color, alpha=0.8)
-    ax.bar_label(bars, padding=3, fontsize=9)
-    
-    ax.set_title(title, size=14)
-    ax.set_xlabel(column)
-    plt.tight_layout()
-    
-    return fig
+    for chunk_idx, chunk in enumerate(feature_chunks):
+        # A4 Landscape boyutunda, 2 satır (Top, Bottom), 4 sütun (Özellikler)
+        fig, axes = plt.subplots(2, 4, figsize=(15, 8.5))
+        fig.suptitle(f"{title} - Part {chunk_idx + 1}", fontsize=16, weight='bold', y=0.98)
+        
+        for col_idx, feature in enumerate(chunk):
+            # --- 1. Top 10 (En Yüksekler) ---
+            # İlgili özelliğe göre azalan (descending) sırala
+            top_df = df.sort_values(by=feature, ascending=False).head(10)
+            
+            # Tablo için veriyi hazırla: Sadece Şarkı Adı ve Değer
+            # Şarkı isimlerini uzunsa kesiyoruz (max 20 karakter)
+            top_data = [
+                [f"{row['Track Name'][:20]}...", f"{row[feature]:.2f}"] 
+                for _, row in top_df.iterrows()
+            ]
+            
+            ax_top = axes[0, col_idx]
+            ax_top.axis('off')
+            ax_top.set_title(f"Highest {feature}", fontsize=10, weight='bold', color='darkgreen', pad=5)
+            
+            table_top = ax_top.table(
+                cellText=top_data,
+                colLabels=["Track", "Value"],
+                cellLoc='left',
+                loc='center',
+                colWidths=[0.75, 0.25]
+            )
+            table_top.auto_set_font_size(False)
+            table_top.set_fontsize(8)
+            table_top.scale(1, 1.2) # Satır aralıklarını hafif aç
+            
+            # Başlık satırını renklendir
+            for (row, col), cell in table_top.get_celld().items():
+                if row == 0:
+                    cell.set_text_props(weight='bold', color='white')
+                    cell.set_facecolor('#2ecc71') # Yeşil tonu
+            
+            # --- 2. Bottom 10 (En Düşükler) ---
+            # İlgili özelliğe göre artan (ascending) sırala
+            bottom_df = df.sort_values(by=feature, ascending=True).head(10)
+            
+            bottom_data = [
+                [f"{row['Track Name'][:20]}...", f"{row[feature]:.2f}"] 
+                for _, row in bottom_df.iterrows()
+            ]
+            
+            ax_bottom = axes[1, col_idx]
+            ax_bottom.axis('off')
+            ax_bottom.set_title(f"Lowest {feature}", fontsize=10, weight='bold', color='darkred', pad=5)
+            
+            table_bottom = ax_bottom.table(
+                cellText=bottom_data,
+                colLabels=["Track", "Value"],
+                cellLoc='left',
+                loc='center',
+                colWidths=[0.75, 0.25]
+            )
+            table_bottom.auto_set_font_size(False)
+            table_bottom.set_fontsize(8)
+            table_bottom.scale(1, 1.2)
+            
+            # Başlık satırını renklendir
+            for (row, col), cell in table_bottom.get_celld().items():
+                if row == 0:
+                    cell.set_text_props(weight='bold', color='white')
+                    cell.set_facecolor('#e74c3c') # Kırmızı tonu
+
+        # Grid'i sıkılaştır ve sayfayı listeye ekle
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95], w_pad=2.0, h_pad=3.0)
+        pages.append(fig)
+        
+    return pages
 
 def create_playlist_dna_catplot(df, features, title="Playlist Audio Features DNA"):
     """
