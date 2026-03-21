@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from wordcloud import WordCloud
 import config
+import networkx as nx
+
 
 def create_radar_chart(averages: dict, title: str) -> plt.Figure:
     """Plots audio features as a radar chart (spider web)."""
@@ -43,5 +45,31 @@ def create_wordcloud(genre_df, title: str) -> plt.Figure:
     ax.imshow(wc, interpolation='bilinear')
     ax.set_axis_off() # Hide axes
     ax.set_title(title, size=18, pad=10)
+    
+    return fig
+
+def create_network_graph(nodes: list, edges: list, title: str) -> plt.Figure:
+    """Draws a similarity graph using a force-directed layout."""
+    G = nx.Graph()
+    G.add_nodes_from(nodes)
+    
+    # edges is a list of tuples (node1, node2, weight)
+    for u, v, w in edges:
+        G.add_edge(u, v, weight=w)
+        
+    fig, ax = plt.subplots(figsize=(12, 12))
+    
+    # Calculate layout (Spring layout simulates physical forces)
+    pos = nx.spring_layout(G, k=0.15, iterations=20)
+    
+    # Draw nodes and labels
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=300, node_color=config.DataColors.SIMILAR_TRACKS, alpha=0.7)
+    nx.draw_networkx_labels(G, pos, ax=ax, font_size=8)
+    
+    # Draw edges
+    nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.3, edge_color="gray")
+    
+    ax.set_title(title, size=18)
+    ax.set_axis_off()
     
     return fig

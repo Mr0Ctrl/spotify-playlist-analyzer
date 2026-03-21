@@ -17,14 +17,18 @@ def main():
         
         print(f"--- Generating Report for: {playlist_name} ---")
 
-        # 2. Run Analysis
+        #region 2. Run Analysis
         averages = preprocessor.get_audio_averages(df)
         genres = preprocessor.get_genre_stats(df)
+        nodes, edges = preprocessor.get_track_similarity_network(df)
 
+        #endregion
+        
         # 3. Initialize Report
         report = report_generator.ReportGenerator(out_dir, playlist_name)
         
-        # 4. Assemble PDF Pages
+        #region 4. Assemble PDF Pages
+
         print("Creating Cover Page...")
         report.add_title_page(playlist_name, len(df))
 
@@ -35,6 +39,11 @@ def main():
         print("Creating Genre Cloud Page...")
         wc_fig = visualization.create_wordcloud(genres, "Genre Distribution Cloud")
         report.add_visual_page(wc_fig)
+
+        print("Creating Similarity Network Page...")
+        network_fig = visualization.create_network_graph(nodes, edges, "Track Similarity Network")
+        report.add_visual_page(network_fig)
+        #endregion
 
         # 5. Finalize
         report.close()
