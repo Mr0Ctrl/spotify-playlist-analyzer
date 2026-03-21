@@ -1,7 +1,5 @@
 import sys
-import os
-import matplotlib.pyplot as plt
-import config, data_loader, preprocessor, visualization
+import data_loader, preprocessor, visualization, report_generator
 from utils import file_system
 
 def main():
@@ -12,32 +10,37 @@ def main():
     csv_path = sys.argv[1]
     
     try:
-        # 1. Preparation and Loading
+        # 1. Setup and Data Loading
         playlist_name = file_system.get_safe_filename(csv_path)
         out_dir = file_system.create_output_dir(playlist_name)
         df = data_loader.load_csv(csv_path)
         
-        print(f"--- Visualizing {playlist_name} ---")
+        print(f"--- Generating Report for: {playlist_name} ---")
 
-        # 2. Analysis
+        # 2. Run Analysis
         averages = preprocessor.get_audio_averages(df)
         genres = preprocessor.get_genre_stats(df)
 
-        # 3. Visualization (Generate figures)
-        radar_fig = visualization.create_radar_chart(averages, "Playlist Audio Profile")
-        wc_fig = visualization.create_wordcloud(genres, "Top Genres Cloud")
-
-        # 4. Temporary Save (as PNG) - For Testing Purposes
-        radar_fig.savefig(os.path.join(out_dir, "radar_profile.png"))
-        wc_fig.savefig(os.path.join(out_dir, "genres_cloud.png"))
+        # 3. Initialize Report
+        report = report_generator.ReportGenerator(out_dir, playlist_name)
         
-        # Clean up memory (Very important!)
-        plt.close('all')
+        # 4. Assemble PDF Pages
+        print("Creating Cover Page...")
+        report.add_title_page(playlist_name, len(df))
 
-        print(f"Graphs created and saved as PNG in '{out_dir}' folder.")
+        print("Creating Audio Profile Page...")
+        radar_fig = visualization.create_radar_chart(averages, "Audio Features Profile")
+        report.add_visual_page(radar_fig)
+
+        print("Creating Genre Cloud Page...")
+        wc_fig = visualization.create_wordcloud(genres, "Genre Distribution Cloud")
+        report.add_visual_page(wc_fig)
+
+        # 5. Finalize
+        report.close()
 
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"CRITICAL ERROR: {e}")
 
 if __name__ == "__main__":
     main()
