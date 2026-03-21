@@ -156,33 +156,78 @@ def create_distribution_plot(df, column, title, color, bins=20, unit="", x_label
     return fig
 
 
-def create_correlation_grid(df, columns, charts_per_page=8):
-    """Özellikler arası korelasyonu 2D Histogramlar şeklinde sayfalara böler."""
-    pairs = list(combinations(columns, 2))
+def create_correlation_grid(df, triplets, charts_per_page=8):
+    """Scatter plots with color mapping for given triplets."""
     pages = []
     
-    for i in range(0, len(pairs), charts_per_page):
-        fig, axes = plt.subplots(2, 4, figsize=(15, 8)) # 2x4 layout
-        fig.suptitle("Audio Feature Correlations", fontsize=16)
+    for i in range(0, len(triplets), charts_per_page):
+        n_plots = min(charts_per_page, len(triplets) - i)
+        
+        # Fixed 2 rows, 4 columns layout
+        fig, axes = plt.subplots(2, 4, figsize=(16, 4))
+        fig.suptitle("Audio Feature Correlations", fontsize=12, fontweight='bold')
+        
+        # Flatten axes to 1D array
         axes = axes.flatten()
         
-        subset_pairs = pairs[i : i + charts_per_page]
-        
-        for j, (col_x, col_y) in enumerate(subset_pairs):
+        # Create plots
+        for j, (x, y, c) in enumerate(triplets[i:i+charts_per_page]):
             ax = axes[j]
-            h = ax.hist2d(df[col_x], df[col_y], bins=15, cmap='Blues')
-            ax.set_xlabel(col_x, fontsize=8)
-            ax.set_ylabel(col_y, fontsize=8)
-            ax.tick_params(labelsize=7)
             
-        # Boş kalan eksenleri temizle
-        for k in range(len(subset_pairs), len(axes)):
-            axes[k].axis('off')
+            # Calculate correlation
+            corr_val = df[x].corr(df[y])
             
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+            # Scatter plot with color
+            sc = ax.scatter(df[x], df[y], c=df[c], cmap='viridis', 
+                          alpha=0.6, s=40, edgecolors='white', linewidth=0.5)
+            # Labels and title
+            ax.set_xlabel(x, fontsize=10)
+            ax.set_ylabel(y, fontsize=10)
+            ax.set_title(f"r = {corr_val:.2f} | Color: {c}", fontsize=8, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.set_aspect('auto', adjustable='box')
+            
+            # Add colorbar
+            cbar = plt.colorbar(sc, ax=ax, shrink=0.6)
+            cbar.ax.tick_params(labelsize=4)
+        
+        # Hide unused subplots
+        for j in range(n_plots, len(axes)):
+            axes[j].axis('off')
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.97])
         pages.append(fig)
+    
     return pages
 
+def create_flow_analysis_grid(df, features, window_size=5):
+    """
+    Şarkı sırasına göre özelliklerin değişimini çizer.
+    Her sayfada 4 adet grafik olacak şekilde listeler döner.
+    """
+    pages = []
+    # 8 özelliği 4'erli gruplara ayır
+    for i in range(0, len(features), 4):
+        fig, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
+        subset_features = features[i:i+4]
+        
+        for j, col in enumerate(subset_features):
+            ax = axes[j]
+            # Ham veri (soluk çizgi)
+            ax.plot(df.index, df[col], alpha=0.2, color='gray')
+            # Hareketli ortalama (kalın renkli çizgi)
+            smooth_data = df[col].rolling(window=window_size, center=True).mean()
+            ax.plot(df.index, smooth_data, color=config.DataColors.TEMPO, linewidth=2)
+            
+            ax.set_ylabel(col, fontsize=10)
+            ax.set_ylim(0, 1)
+            ax.grid(True, alpha=0.3)
+            
+        axes[-1].set_xlabel("Track Index (Order in Playlist)")
+        plt.tight_layout()
+        pages.append(fig)
+    return pages
+    
 def create_ranking_plot(df, column, title, color, top_n=15, ascending=False):
     """En yüksek veya en düşük N şarkıyı sıralar."""
     # Veriyi sırala ve ilk N tanesini al
@@ -224,10 +269,13 @@ def create_playlist_dna_catplot(df, features, title="Playlist Audio Features DNA
         kind='violin', 
         inner='quart', 
         split=True,
+        hue='Feature',           # Add hue parameter
         palette='viridis',
+        legend=False,            # Hide legend (since it's redundant)
         height=6, 
-        aspect=2, # Genişlik/Yükseklik oranı (A4 Landscape uyumu için)
-        bw_method=0.2 # Dağılımın hassasiyeti
+        aspect=2,
+        alpha=0.3,                # Width/Height ratio (A4 Landscape compatibility)
+        bw_method=0.2            # Distribution smoothness
     )
 
     # 3. Üzerine ham veriyi (noktaları) ekleyelim (stripplot)
@@ -237,8 +285,8 @@ def create_playlist_dna_catplot(df, features, title="Playlist Audio Features DNA
         x='Feature', 
         y='Value', 
         color='black', 
-        size=2, 
-        alpha=0.3, 
+        size=5, 
+        alpha=0.5, 
         ax=g.ax
     )
 
@@ -253,3 +301,4 @@ def create_playlist_dna_catplot(df, features, title="Playlist Audio Features DNA
     
     # catplot bir FacetGrid döner, figürüne erişip döndürüyoruz
     return g.fig
+

@@ -17,7 +17,8 @@ def main():
         playlist_name = file_system.get_safe_filename(csv_paths)
         out_dir = file_system.create_output_dir(playlist_name)
         df = data_loader.load_csv(csv_paths)
-        
+        preprocessor.normalize_tempo_in_place(df)
+
         print(f"--- Generating Report for: {playlist_name} ---")
 
         # 2. Run Analysis
@@ -29,7 +30,7 @@ def main():
         report = report_generator.ReportGenerator(out_dir, playlist_name)
         
         # 4. Assemble PDF Pages
-
+        #region pages
         print("Creating Cover Page...")
         report.add_title_page(playlist_name, len(df))
 
@@ -49,66 +50,38 @@ def main():
         network_fig = visualization.create_network_graph(nodes, edges, "Track Similarity Network")
         report.add_visual_page(network_fig)
 
-        # --- GENERAL DISTRIBUTION PLOTS ---
-        print("Creating Distribution Analysis...")
+        # --- PLAYLIST DNA (CATPLOT) ---
+        print("Generating Playlist DNA (CatPlot)...")
 
-        # 2.1 Popularity
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.POPULARITY, "Popularity Distribution", 
-            config.DataColors.POPULARITY, bins=20, x_label="Popularity (0-100)"
-        ))
+        # config.PERCENTAGE_COLUMNS içindeki 8 parametreyi kullanır
+        dna_fig = visualization.create_playlist_dna_catplot(
+            df, 
+            config.PERCENTAGE_COLUMNS, 
+            title=f"Audio DNA: {playlist_name}"
+        )
+        report.add_visual_page(dna_fig)
 
-        # 2.2 Duration (Convert to minutes first, then plot)
-        df_temp = df.copy()
-        df_temp[config.Columns.DURATION] = df_temp[config.Columns.DURATION] / 60000
-        report.add_visual_page(visualization.create_distribution_plot(
-            df_temp, config.Columns.DURATION, "Track Duration Distribution", 
-            config.DataColors.DURATION, bins=15, unit="min"
-        ))
+        # Create correlation pages
+        triplets = [
+            ('Acousticness', 'Energy', 'Danceability'),
+            ('Energy', 'Valence', 'Tempo'),
+            ('Danceability', 'Energy', 'Valence'),
+            ('Speechiness', 'Instrumentalness', 'Energy'),
+            ('Acousticness', 'Loudness', 'Energy'),
+            ('Tempo', 'Danceability', 'Energy'),
+            ('Energy', 'Loudness', 'Valence'),
+            ('Valence', 'Danceability', 'Energy'),
+        ]
 
-        # 2.3 Tempo (BPM)
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.TEMPO, "Tempo Distribution", 
-            config.DataColors.TEMPO, bins=20, unit="BPM"
-        ))
+        corr_pages = visualization.create_correlation_grid(df, triplets, charts_per_page=8)
+        for page in corr_pages:
+            report.add_visual_page(page)
 
-        # 2.4 Loudness (dB)
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.LOUDNESS, "Loudness Distribution", 
-            config.DataColors.LOUDNESS, bins=15, unit="dB"
-        ))
-
-        # 2.5 Key (Notes)
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.KEY, "Key Distribution (0=C, 1=C#, etc.)", 
-            config.DataColors.KEY, bins=12
-        ))
-
-        # 2.6 Mode (Major/Minor)
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.MODE, "Mode Distribution (1=Major, 0=Minor)", 
-            config.DataColors.MODE, bins=2
-        ))
-
-        # 2.7 Time Signature
-        report.add_visual_page(visualization.create_distribution_plot(
-            df, config.Columns.TIME_SIGNATURE, "Time Signature Distribution", 
-            config.DataColors.TIME_SIGNATURE, bins=5
-        ))
-
-        # 2.8 Audio Features (Percentage Data: Danceability, Energy, etc.)
-        for col in config.PERCENTAGE_COLUMNS:
-            color = getattr(config.DataColors, col.upper().replace(" ", "_"), "#333333")
-            report.add_visual_page(visualization.create_distribution_plot(
-                df, col, f"{col} Amount Distribution", 
-                color, bins=20, x_label=f"{col} (0.0 - 1.0)"
-            ))
-        
-        # Correlation Grid (should be outside the loop)
-        print("Creating Correlation Grid...")
-        corr_pages = visualization.create_correlation_grid(df, config.PERCENTAGE_COLUMNS)
-        for p in corr_pages: 
-            report.add_visual_page(p)
+        # --- 2. AKIŞ ANALİZİ ---
+        # window_size şarkı sayısına göre dinamik olabilir (örn: toplamın %5'i)
+        flow_figs = visualization.create_flow_analysis_grid(df, config.PERCENTAGE_COLUMNS, window_size=7)
+        for fig in flow_figs:
+            report.add_visual_page(fig)
 
         # Top Energetic Tracks
         print("Creating Top Tracks Analysis...")
