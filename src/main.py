@@ -17,7 +17,9 @@ def main():
         playlist_name = file_system.get_safe_filename(csv_paths)
         out_dir = file_system.create_output_dir(playlist_name)
         df = data_loader.load_csv(csv_paths)
-        preprocessor.normalize_tempo_in_place(df)
+        preprocessor.normalize_column_in_place(df,config.Columns.TEMPO,50,200)
+        preprocessor.normalize_column_in_place(df,config.Columns.LOUDNESS,-30,0)
+
 
         print(f"--- Generating Report for: {playlist_name} ---")
 
@@ -32,7 +34,9 @@ def main():
         # 4. Assemble PDF Pages
         #region pages
         print("Creating Cover Page...")
-        report.add_title_page(playlist_name, len(df))
+        time_summary = preprocessor.get_track_duration_summary(df)
+        report.add_title_page(playlist_name, time_summary)
+
 
         index_pages = visualization.create_track_index_page(df, "Track Inventory")
         for p in index_pages: 
@@ -51,26 +55,29 @@ def main():
         report.add_visual_page(network_fig)
 
         # --- PLAYLIST DNA (CATPLOT) ---
-        print("Generating Playlist DNA (CatPlot)...")
+        print("Generating Playlist CatPlots...")
 
         # config.PERCENTAGE_COLUMNS içindeki 8 parametreyi kullanır
         dna_fig = visualization.create_playlist_dna_catplot(
             df, 
             config.PERCENTAGE_COLUMNS, 
-            title=f"Audio DNA: {playlist_name}"
+            title=f"Audio CatPlots: {playlist_name}"
         )
         report.add_visual_page(dna_fig)
 
         # Create correlation pages
         triplets = [
-            ('Acousticness', 'Energy', 'Danceability'),
-            ('Energy', 'Valence', 'Tempo'),
-            ('Danceability', 'Energy', 'Valence'),
-            ('Speechiness', 'Instrumentalness', 'Energy'),
-            ('Acousticness', 'Loudness', 'Energy'),
+            ('Tempo', 'Energy', 'Valence'),
             ('Tempo', 'Danceability', 'Energy'),
-            ('Energy', 'Loudness', 'Valence'),
+            ('Tempo', 'Valence', 'Danceability'),
+
+            ('Speechiness', 'Instrumentalness', 'Energy'),
+
+            ('Valence','Energy', 'Loudness'),
             ('Valence', 'Danceability', 'Energy'),
+
+            ('Acousticness', 'Energy', 'Danceability'),
+            ('Acousticness', 'Loudness', 'Energy'),
         ]
 
         corr_pages = visualization.create_correlation_grid(df, triplets, charts_per_page=8)
