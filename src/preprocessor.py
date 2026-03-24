@@ -4,6 +4,18 @@ from itertools import product
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
+from datetime import timedelta
+
+def get_track_duration_summary(df):
+    """Track sürelerinin özetini döndürür."""
+    total_ms = int(df[config.Columns.DURATION].sum())
+    total_duration = timedelta(milliseconds=total_ms)
+    
+    return {
+        'total_tracks': len(df),
+        'total_duration': total_duration,
+        'total_ms': total_ms
+    }
 
 def get_audio_averages(df: pd.DataFrame) -> dict:
     """Calculates the averages of selected columns for the radar chart."""
@@ -64,31 +76,38 @@ def get_track_similarity_network(df: pd.DataFrame, feature_weights: dict = None)
     
     return list(range(num_tracks)), kept_edges
 
-def normalize_tempo_in_place(df: pd.DataFrame, min_reference: int = 50, max_reference: int = 200):
-    """
-    Tempo (BPM) değerini referans aralığa göre 0-1 arasına normalize eder.
-    Referans tipli işlem yaparak DataFrame'i doğrudan günceller.
+def normalize_column_in_place(df: pd.DataFrame, column_name: str, min_reference: float = None, max_reference: float = None, 
+                              use_data_bounds: bool = False, clip_values: bool = True):
+    # Sütunun varlığını kontrol et
+    if column_name not in df.columns:
+        print(f"Warning: Column '{column_name}' not found in DataFrame.")
+        return False
     
-    Neden 50-200? 
-    Genelde müzikal tempo bu aralıktadır. 50 altı veya 200 üstü değerler 
-    uç değer (outlier) kabul edilerek sınırlara çekilir (clamping).
-    """
-    tempo_col = config.Columns.TEMPO
+    # Referans değerlerini belirle
+    if use_data_bounds:
+        min_reference = df[column_name].min()
+        max_reference = df[column_name].max()
+        clip_values = False  # Veri sınırları kullanılıyorsa clamping'e gerek yok
+    elif min_reference is None or max_reference is None:
+        print(f"Error: Both min_reference and max_reference must be specified when use_data_bounds=False.")
+        return False
     
-    if tempo_col not in df.columns:
-        return
-
-    # 1. Adım: Clamping (Sınırlandırma)
-    # Değerleri min_reference ve max_reference arasına hapseder.
-    # Örneğin: 220 BPM olan bir şarkı 200 kabul edilir, 40 olan 50 kabul edilir.
-    df[tempo_col] = df[tempo_col].clip(lower=min_reference, upper=max_reference)
+    # Aynı değer kontrolü (division by zero)
+    if min_reference == max_reference:
+        print(f"Warning: min_reference ({min_reference}) equals max_reference ({max_reference}). Setting column to 0.5.")
+        df[column_name] = 0.5
+        return True
+    
+    # 1. Adım: Clamping (Sınırlandırma) - opsiyonel
+    if clip_values:
+        df[column_name] = df[column_name].clip(lower=min_reference, upper=max_reference)
     
     # 2. Adım: Min-Max Scaling
     # Formül: (x - min) / (max - min)
-    # Bu sayede 50 BPM -> 0.0, 200 BPM -> 1.0, 125 BPM -> 0.5 olur.
-    df[tempo_col] = (df[tempo_col] - min_reference) / (max_reference - min_reference)
+    df[column_name] = (df[column_name] - min_reference) / (max_reference - min_reference)
     
-    print(f"Tempo normalized in-place using range [{min_reference}-{max_reference}].")
+    print(f"Column '{column_name}' normalized in-place using range [{min_reference:.2f}-{max_reference:.2f}].")
+    return True
 
 
 def detect_outliers_statistical(df):
