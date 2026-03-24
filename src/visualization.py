@@ -70,7 +70,7 @@ def create_network_graph(nodes: list, edges: list, title: str) -> plt.Figure:
     
     # Use spring layout with weight as distance (smaller weight = stronger attraction)
     # This makes similar nodes (small weight) appear closer together
-    pos = nx.spring_layout(G, weight='weight', k=0.25, iterations=512, seed=42,)
+    pos = nx.spring_layout(G, weight='weight', k=0.3, iterations=256, seed=42)
 
     
     # Colors for components (use tab10 colormap for up to 10 components)
@@ -157,7 +157,7 @@ def create_distribution_plot(df, column, title, color, bins=20, unit="", x_label
     return fig
 
 
-def create_correlation_grid(df, triplets, charts_per_page=8):
+def create_correlation_grid(df, triplets, charts_per_page=8, x_range=(0, 1), y_range=(0, 1)):
     """Scatter plots with color mapping for given triplets."""
     pages = []
     
@@ -178,19 +178,28 @@ def create_correlation_grid(df, triplets, charts_per_page=8):
             # Calculate correlation
             corr_val = df[x].corr(df[y])
             
-            # Scatter plot with color
+            # Scatter plot with color - FIXED COLOR RANGE 0-1
             sc = ax.scatter(df[x], df[y], c=df[c], cmap='viridis', 
-                          alpha=0.6, s=40, edgecolors='white', linewidth=0.5)
+                          alpha=0.6, s=40, edgecolors='white', linewidth=0.5,
+                          vmin=0, vmax=1)
+            
             # Labels and title
             ax.set_xlabel(x, fontsize=10)
             ax.set_ylabel(y, fontsize=10)
             ax.set_title(f"r = {corr_val:.2f} | Color: {c}", fontsize=8, fontweight='bold')
             ax.grid(True, alpha=0.3)
+            
+            # FIX: Set fixed axis limits to 0-1
+            ax.set_xlim(x_range)
+            ax.set_ylim(y_range)
+            
+            # Set aspect ratio to maintain consistency
             ax.set_aspect('auto', adjustable='box')
             
-            # Add colorbar
+            # Add colorbar with fixed range
             cbar = plt.colorbar(sc, ax=ax, shrink=0.6)
             cbar.ax.tick_params(labelsize=4)
+            cbar.set_label('Value', fontsize=6)
         
         # Hide unused subplots
         for j in range(n_plots, len(axes)):
