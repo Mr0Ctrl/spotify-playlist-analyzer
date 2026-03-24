@@ -16,7 +16,7 @@ class ReportGenerator:
             math_utils.mm_to_inches(config.A4_LANDSCAPE[1])
         )
 
-    def add_title_page(self, playlist_name: str, track_count: int):
+    def add_title_page(self, playlist_name: str, track_info:dict):
         """Creates a professional cover page for the report."""
         fig = plt.figure(figsize=self.page_size)
         fig.clf() # Clear figure
@@ -25,8 +25,14 @@ class ReportGenerator:
         fig.text(0.5, 0.7, config.REPORT_TITLE, size=config.TITLE_FONT_SIZE, ha="center", weight="bold")
         
         # Add Subtitle
-        subtitle = f"Playlist: {playlist_name}\nTracks Analyzed: {track_count}"
+        subtitle = f"Playlist: {playlist_name}\n"
+        info =""
+        for index, (key, value) in enumerate(track_info.items()):
+            info = info + f"{str(key):_<15}:{str(value):_>15}\n"
+
+
         fig.text(0.5, 0.55, subtitle, size=config.SUBTITLE_FONT_SIZE, ha="center")
+        fig.text(0.5, 0.45, info    , size=config.FONT_SIZE, ha="center")
         
         # Add Footer
         fig.text(0.5, 0.1, config.FOOTER_TEXT, size=10, ha="center", style="italic")
