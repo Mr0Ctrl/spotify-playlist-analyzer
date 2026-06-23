@@ -1,4 +1,10 @@
 import sys
+import os
+
+os.environ['MPLBACKEND'] = 'Agg'
+import matplotlib
+matplotlib.use('Agg')
+
 import data_loader, preprocessor, visualization, report_generator
 from utils import file_system
 import config

@@ -1,51 +1,76 @@
-# spotify-playlist-analyzer
-Python script that generates all kinds of visualization based on a spotify playlist exported via Exportify
+# Spotify Playlist Analyzer
 
-## Setup (Windows)
+Analyze Spotify playlists exported via Exportify. Generates PDF reports with statistics, audio features, genre distribution, and similarity networks.
 
-**for Unix/macOS commands visit https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment**
+## Requirements
 
-- Make sure Python 3.11 is installed on your computer (this is the tested version).
-- Setup a virtual environment:
-```
-py -m venv env
-```
+- Python 3.12
+- pip
 
-- Activate the environment:
-```
-.\env\Scripts\activate
-```
+## Installation
 
-- Install dependencies:
-```
-py -m pip install -r requirements.txt
-```
+```bash
+# Clone repository
+git clone <repository-url>
+cd spotify-playlist-analyzer
 
-- Deactivate the environment:
-```
-deactivate
+# Create virtual environment
+python3 -m venv venv
+
+source venv/bin/activate  # Linux/Ubuntu
+# or
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-- Get the playlist metadata from https://watsonbox.github.io/exportify/ (make sure to enable optional data in the settings!)
-- Enable the environment in your terminal
-- use the following command
-```
-py spotify_playlist_analyzer.py <path_to_csv>
-```
-- The output is in the `out` folder of the project, in a folder named after the current time.
-- For bulk processing:
-```
-py bulk_process.py <directory>
+### Single playlist
+```bash
+python src/main.py <path_to_csv>
 ```
 
-## Updating dependencies (for development purposes only)
-
-- Use pip to update dependencies
-- Update requirements.txt:
+### Multiple playlists
+```bash
+python src/main.py playlist1.csv playlist2.csv ...
 ```
-py -m pip freeze | Set-Content requirements.txt
+
+### Bulk processing
+```bash
+python scripts/bulk_process.py <directory>  # can be broken
+```
+
+### Export playlist data
+1. Go to https://watsonbox.github.io/exportify/
+2. Login with Spotify
+3. Select playlist and enable all optional data
+4. Export as CSV
+
+## Output
+
+Results are saved in `out/` folder with timestamp:
+- `analysis_report.pdf`     - Complete report with visualizations
+- `playlist_stats.csv`      - Summary statistics
+- `track_data_processed.csv` - Enriched track data
+
+## Project Structure
+
+```
+spotify-playlist-analyzer/
+├── src/
+│   ├── main.py              # Entry point
+│   ├── config.py            # Configuration
+│   ├── data_loader.py       # CSV loading
+│   ├── preprocessor.py      # Data processing
+│   ├── visualization.py     # Plot generation
+│   ├── report_generator.py  # PDF creation
+│   └── utils/               # Utilities
+├── scripts/
+│   └── bulk_process.py      # Batch processing
+├── requirements.txt
+└── README.md
 ```
 
 ## License
